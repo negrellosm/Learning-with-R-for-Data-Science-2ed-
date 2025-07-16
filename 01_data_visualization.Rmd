@@ -13,7 +13,7 @@ library(ggthemes)
 
 # 1. Creating a plot
 
-- Central question: “what does the relationship between flipper length and body mass look like?”
+- Central question: “What does the relationship between flipper length and body mass look like in the palmerpenguins dataset?”
 
 - First, we just state the dataset to use in the graph
 ```{r}
