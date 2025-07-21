@@ -1,0 +1,80 @@
+---
+title: "2. Workflow Basics"
+author: "Matheus C. Negrellos"
+date: "2025-07-21"
+output: html_document
+---
+
+# 1. "Rules" for Comments
+
+- A reasonable rule of thumb to follow when writing comments after the "#" is:
+  *  Use comments to explain the WHY of your code, not the how or the what
+- We can discover the how and the what by carefully reading the code
+  * However, the WHY you've changed the value of an argument from its default is almost impossible to discover.
+    * In this case, comments are welcomed.
+
+
+# 2. Calling functions
+
+```{r}
+# "seq" stands for "sequence" of numbers
+seq(from = 1, to = 10)
+
+# Usually, the "from" and "to" are omitted:
+seq(1, 10)
+```
+
+# 3. Exercises
+
+1. Why does this code not work?
+```{r}
+my_variable <- 10
+my_varıable
+```
+
+- Answer:
+  * The second line has a typo error: the "i" is actually a dotless "i" (ı)
+
+
+2. Tweak each of the following R commands so that they run correctly:
+```{r}
+# Original
+libary(todyverse)
+
+ggplot(dTA = mpg) + 
+  geom_point(maping = aes(x = displ y = hwy)) +
+  geom_smooth(method = "lm)"
+
+# Corrected version:
+library(tidyverse)
+
+ggplot(mpg,
+       aes(x = displ, y = hwy)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+- Answer:
+  * Besides the typo errors, there is a problem with the aesthetics mapping
+    * If you do not map the `aes` at the global level (inside "ggplot"), the following `geoms` will not receive the x and y aesthetics
+    * If you map the asesthetics only inside `geom_point`, `geom_smooth` does not know which variables to use, unless you specify them.
+
+
+3. Press Option + Shift + K / Alt + Shift + K. What happens? How can you get to the same place using the menus?
+
+- Answer:
+  * This command opens a quick list of keyboard shortcuts that can also be opened by clicking in the "help" button
+
+4. Let’s revisit an exercise from the Section 1.6. Run the following lines of code. Which of the two plots is saved as mpg-plot.png? Why?
+```{r}
+my_bar_plot <- ggplot(mpg, aes(x = class)) +
+  geom_bar()
+
+my_scatter_plot <- ggplot(mpg, aes(x = cty, y = hwy)) +
+  geom_point()
+
+ggsave(filename = "mpg-plot.png", plot = my_bar_plot)
+```
+
+- Answer:
+  * The first plot is saved as "mpg-plot.png" because it is the one in the argument that indicates which object to save: `plot = my_bar_plot`
