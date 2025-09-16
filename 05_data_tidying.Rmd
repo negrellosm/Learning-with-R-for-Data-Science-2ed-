@@ -1,0 +1,331 @@
+---
+title: "5. Data Tidying"
+author: "Matheus C. Negrellos"
+date: "2025-06-30"
+output: html_document
+---
+
+```{r Load package(s), message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+# 1. Tidy data
+
+- There are three rules that make a data tidy:
+  * 1) Each variable is a column; each column is a variable.
+  * 2) Each observation is a row; each row is an observation.
+  * 3) Each value is a cell; each cell is a single value.
+
+- Storing variables in columns enables R’s vectorized nature to shine.
+
+
+# Exercises (1)
+
+1. For each of the sample tables, describe what each observation and each column represents.
+
+- Answer: 
+  * Table 1: Each column is a variable. Each row is an observation for a specific
+  * country in a specific year.
+  * Table 2: Each column is a variable for a specific country, year and type of measurement (cases or population). There are twice as many rows as Table 1.
+  * Table 3: It is very similar with table 1, but, displaying a ratio (cases/population).
+
+
+# 2. Lengthening data
+
+- The `tidyr` package (part of `tidyverse`) provides 2 functions for pivoting data:
+  * `pivot_longer()`
+     * **When to use**: data has variables stored in column names (wide format).
+     * **What it does**: increases rows, decreases columns: makes data “longer”.
+  * `pivot_wider()`
+    * **When to use**: data has values repeated across rows (long format).
+    * **What it does**: increases columns, decreases rows: makes data “wider”.
+
+
+## 2.1 Data in column names
+
+- `billboard` -> data set of rank of songs in the year 2000.
+
+- Problem: The `wk`'s columns are not variables. They are values of one variable (rank) through time.
+
+- Solution: We must reshape them into two columns: one for `week` and one for `rank`.
+```{r}
+# Pivot the data
+billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"),
+    names_to = "week",
+    values_to = "rank"
+  )
+```
+
+- A simple `pivot_longer` has three main arguments:
+  * `cols` specifies which columns need to be pivoted into longer format.
+  * `names_to` sets the name of the new column that will contain the original column names.
+  * `values_to` sets the name of the new column that will contain the original cell values.
+
+- `value_drop_na = ` gets rid of the missing values:
+```{r}
+billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"), 
+    names_to = "week", 
+    values_to = "rank",
+    values_drop_na = TRUE
+  )
+```
+
+- Transform values of `week` from character to numeric
+```{r}
+billboard_longer <- billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"),
+    names_to = "week",
+    values_to = "rank",
+    values_drop_na = TRUE
+  ) |> 
+  mutate(
+    week = parse_number(week)
+  )
+```
+
+- `parse_number` extracts the number of a string by ignoring the non-numerical part of the character and returning just the numerical value.
+- There is myriad of `parse_` to convert strings into other types of data:
+  * `parse_integer("23")` -> Converts to an integer.
+  * `parse_logical("TRUE")` -> Converts to logical values (TRUE/FALSE).
+
+
+- With the data long, we can see how song ranks vary over time
+```{r}
+billboard_longer |> 
+  ggplot(aes(x = week, y = rank, group = track)) + 
+  geom_line(alpha = 0.25) + 
+  scale_y_reverse() # We reverse the scale because higher positions correspond to smaller numbers
+```
+
+
+## 2.2 How does pivoting work
+```{r}
+df <- tribble(
+  ~id,  ~bp1, ~bp2,
+   "A",  100,  120,
+   "B",  140,  115,
+   "C",  120,  125
+)
+
+```
+
+- We want our dataset to have 3 variables: id, measurement, and value
+```{r}
+df_longer <- pivot_longer(
+  df,
+  cols = bp1:bp2,
+  names_to = "measurement",
+  values_to = "value"
+)
+```
+
+- What is happening in the code?
+  * The columns pivoted (`bp1` and `bp2`) become values of a new column (`measurement`), whose name is defined by `names_to`.
+  * The cell values also become values in a new variable, whose name is defined by `values_to`.
+  * The values in the column that was already a variable are repeated once.
+
+- Here we had a relatively easy job
+  * We wanted to store the values of the columns (`bp1` and `bp2`) in only one new column: `value`.
+
+
+## 2.3 Many variables in columns names
+
+- The `who2` data frame (World Health Organization) has one major issue
+  * For instance, the column `sp_m014` contains four pieces of information:
+    * "sp": method for the diagnosis.
+    * "m": masculine.
+    * "014": age range (0-14).
+    * the cells values represent the count of patients in that category.
+
+```{r}
+who2_longer <- pivot_longer(
+  who2,
+  cols = !(country:year),
+  names_to = c("diagnosis", "gender", "age"),
+  names_sep = "_", # splits the original variable into pieces
+  values_to = "count"
+)
+```
+
+- The main difference from the simpler case is that the column names are not being pivoted into a single column, but into multiple columns
+
+### Exercises (2) - AI Generated
+
+1. Use `pivot_longer()` to transform this data so that each row represents a country and a year, with a column for population
+```{r}
+# Data
+country_pop <- tibble::tibble(
+  country = c("France", "Germany", "Italy"),
+  `2018` = c(67, 83, 60),
+  `2019` = c(67.2, 83.1, 60.2),
+  `2020` = c(67.4, 83.2, 60.3)
+)
+
+# Solution
+country_pop_longer <- country_pop |>
+  pivot_longer(
+    cols = c("2018", "2019", "2020"),
+    names_to = "year",
+    values_to = "population"
+  )
+```
+
+2. Use `pivot_longer()` to create a tidy data frame where each row is a student and a subject, with a column for the score
+
+```{r}
+# Data
+scores <- tibble::tibble(
+  student = c("Alice", "Bob", "Carol"),
+  math = c(90, 85, 88),
+  english = c(92, 80, 85),
+  science = c(85, 89, 90)
+)
+
+# Solution
+scores_longer <- scores |> 
+  pivot_longer(
+    cols = c("math", "english", "science"),
+    names_to = "discipline",
+    values_to = "score"
+  )
+```
+
+
+## 2.4 Data and variable name in the column headers
+
+```{r}
+View(household)
+```
+
+- Problem: the column names contain the names of two variables ("name", "dob") and the values of another ("child 1" or "child 2")
+  * The pattern is: [variable]_[child_identifier]
+
+```{r}
+household_longer <- household |> 
+  pivot_longer(
+    cols = !family,
+    names_to = c(".value", "child"),
+    names_sep = "_",
+    values_drop_na = TRUE
+  )
+```
+
+- Again, we supply a vector to `names_to`, but using `.value`
+  * `.value` is a special feature that lets you split column names to create multiple value columns
+  * It tells `pivot_longer()` to use the first part of the column's name (before the "_")  to create a new column with that first half's name.
+  * It also uses the second part of the column's name (after the "_") to create a new column in the result
+  * Because of the `.value`, the second part the column names in the input contribute to both values and variable names in the output
+  
+
+# 3. Widening data
+
+- Increases columns and reduces rows, making the data wider
+  * It is useful when one observation is spread across multiple rows
+```{r}
+View(cms_patient_experience) # dataset from the Centers of Medicare and Medicaid services
+```
+
+```{r}
+cpe_wider <- cms_patient_experience |> 
+  pivot_wider(
+    id_cols = starts_with("org"),
+    names_from = "measure_cd",
+    values_from = "prf_rate"
+  )
+```
+
+- We use `measure_cd` as the source of our new column names
+  * However, in real analysis, it is more useful to create variable names that are short and meaningful 
+
+- Instead of creating new column names, specify the columns that provide the values (`values_from`) and the column with the names (`names_from`)
+
+- We also need to specify which columns uniquely identify each row
+  * Here, they are the variables starting with "org"
+
+## 3.1 How does pivot_wider work
+
+- You specify a column whose values will become the new column names (`names_from`).
+- You specify a column whose values will fill the cells in these new columns (`values_from`)
+- Each unique combination of the remaining columns forms a row in the new, wider data frame.
+
+```{r}
+
+# Creating data frame
+df <- tribble(
+  ~id, ~measurement, ~value,
+  "A",        "bp1",    100,
+  "A",        "bp1",    102,
+  "A",        "bp2",    120,
+  "B",        "bp1",    140, 
+  "B",        "bp2",    115
+)
+
+# Pivoting the data
+df_wider_1 <- df |> 
+  pivot_wider(
+    names_from = "measurement",
+    values_from = "value"
+  )
+```
+
+- There is a big problem here
+  * For the measurement "bp1" of the "A" id we have two values (100, 102)
+  * The function does not know which one to put in the corresponding cell
+  * There is no unique identifier for each combination of `id` and `measurement`
+
+- A simple solution is to calculate the average between the two values
+```{r}
+df_summarized <- df |>
+  group_by(id, measurement) |>
+  summarise(value = mean(value), .groups = "drop")
+
+# summarise() ensures that for each pair of "id" and "measurement", there is only one value
+df_wider_2 <- df_summarized |>
+  pivot_wider(
+    names_from = "measurement",
+    values_from = "value"
+  )
+```
+
+
+## Exercises (3) - AI Generated
+
+1. Use `pivot_wider()` to create a table with one row per student and separate columns for each subject's score.
+```{r}
+
+# Data
+results <- tibble::tibble(
+  student = c("Alice", "Alice", "Bob", "Bob", "Carol", "Carol"),
+  subject = c("Math", "English", "Math", "English", "Math", "English"),
+  score = c(95, 88, 80, 90, 85, 92)
+)
+
+# Solution
+results_wider <- results |> 
+  pivot_wider(
+    names_from = "subject",
+    values_from = "score"
+  )
+```
+
+- Final comments:
+  * It's not always clear if the longer or wider version of a dataset is the "tidy" one
+    * This uncertainty stems from the vague definition of what a "variable" is
+  * It's okay to be practical—consider a variable as whatever best supports your analysis
+  * If you're stuck, try reorganizing your data—untidy, transform, and re-tidy as needed.
+
+
+
+
+
+
+
+
+
+    
+    
